@@ -6,8 +6,9 @@ import os
 
 app = FastAPI(
     title="YouTube Summary Plugin",
-    description="Плагин для получения краткого содержания YouTube-видео",
-    version="0.0.1"
+    description="...",
+    version="0.0.1",
+    servers=[{"url": "https://gpttestplugin.onrender.com"}]  # <-- указываем реальный домен
 )
 
 # Отладка: посмотрим, какая у нас рабочая директория при запуске
@@ -59,6 +60,8 @@ app.mount(
     StaticFiles(directory=directory_path),
     name="well-known"
 )
+
+
 
 class SummaryRequest(BaseModel):
     youtube_url: str
