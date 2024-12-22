@@ -1,15 +1,63 @@
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from typing import Optional
-
-# Если будете использовать GPT-сжатие
-# import openai
-# openai.api_key = "ВАШ_API_КЛЮЧ"
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI(
     title="YouTube Summary Plugin",
     description="Плагин для получения краткого содержания YouTube-видео",
     version="0.0.1"
+)
+
+# Отладка: посмотрим, какая у нас рабочая директория при запуске
+print("Текущая рабочая директория (os.getcwd()):", os.getcwd())
+print("Папка, где лежит этот скрипт (__file__):", __file__)
+print("os.path.dirname(__file__):", os.path.dirname(__file__))
+
+# Путь к папке .well-known
+directory_path = os.path.join(os.path.dirname(__file__), ".well-known")
+
+print("directory_path =", directory_path)
+
+# Создаём папку, если её нет
+if not os.path.exists(directory_path):
+    try:
+        os.makedirs(directory_path)
+        print(f"Папка '{directory_path}' успешно создана.")
+    except Exception as e:
+        print(f"Ошибка при создании папки: {e}")
+else:
+    print(f"Папка '{directory_path}' уже существует.")
+
+# Проверяем права на чтение
+print("Папка доступна для чтения?", os.access(directory_path, os.R_OK))
+
+# Проверяем, что в папке действительно лежит ai-plugin.json
+file_path = os.path.join(directory_path, "ai-plugin.json")
+print("Путь к файлу ai-plugin.json:", file_path)
+print("Существует ли файл?", os.path.exists(file_path))
+
+if os.path.exists(file_path):
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        print("Содержимое ai-plugin.json:")
+        print(content)
+    except Exception as e:
+        print("Ошибка при чтении ai-plugin.json:", e)
+else:
+    print("Файл ai-plugin.json не найден в папке .well-known")
+
+# Если папки или файла нет — прерываем запуск, чтобы не запускать сервер зря
+if not os.path.exists(directory_path):
+    raise FileNotFoundError(f"Directory {directory_path} does not exist")
+
+# Монтируем папку .well-known как статические файлы
+app.mount(
+    "/.well-known",
+    StaticFiles(directory=directory_path),
+    name="well-known"
 )
 
 class SummaryRequest(BaseModel):
@@ -25,8 +73,6 @@ def get_summary(request: SummaryRequest):
     """
     youtube_url = request.youtube_url
 
-    # 1. Получаем идентификатор видео из youtube_url
-    #    Простейший вариант (можно улучшать парсинг):
     import re
     match = re.search(r"v=([^&]+)", youtube_url)
     if not match:
@@ -34,26 +80,15 @@ def get_summary(request: SummaryRequest):
 
     video_id = match.group(1)
 
-    # 2. Получаем транскрипт (если доступен)
     from youtube_transcript_api import YouTubeTranscriptApi
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ru', 'en'])
     except Exception as e:
         return {"summary": f"Ошибка при получении транскрипта: {str(e)}"}
 
-    # 3. Объединяем текст
     full_text = " ".join([item['text'] for item in transcript])
 
-    # 4. Сжимаем текст
-    # Вариант A: Использовать OpenAI GPT для сжатия (при наличии api_key)
-    # short_text = openai.Completion.create(
-    #     model="text-davinci-003",
-    #     prompt=f"Сжать текст до 3-5 предложений:\n\n{full_text}",
-    #     max_tokens=200
-    # )
-    # summary = short_text.choices[0].text.strip()
-
-    # Вариант B: Простейшая "заглушка"-сокращалка (место для ваших алгоритмов):
+    # Пример простого сокращения
     words = full_text.split()
     summary = " ".join(words[:100]) + "..." if len(words) > 100 else full_text
 

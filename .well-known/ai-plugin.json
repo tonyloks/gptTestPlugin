@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "YouTube Summary Plugin",
+  "name_for_model": "youtube_summary",
+  "description_for_human": "Коротко пересказывает содержание YouTube-видео",
+  "description_for_model": "Получает YouTube URL, извлекает транскрипт, возвращает summary",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://yourdomain.com/openapi.json",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://yourdomain.com/logo.png",
+  "contact_email": "support@example.com",
+  "legal_info_url": "https://yourdomain.com/legal"
+}
