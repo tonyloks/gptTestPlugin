@@ -3,9 +3,11 @@ from pydantic import BaseModel
 from typing import Optional
 from fastapi.staticfiles import StaticFiles
 import os
-
+from youtube_transcript_api import YouTubeTranscriptApi
 from starlette.responses import PlainTextResponse, FileResponse
-
+test_transcript = YouTubeTranscriptApi.get_transcript("7LdAabPIqNE", languages=['ru'])
+full_text = " ".join([item['text'] for item in test_transcript])
+print(full_text)
 app = FastAPI(
     title="YouTube Summary Plugin",
     description="...",
@@ -85,19 +87,17 @@ def get_summary(request: SummaryRequest):
 
     video_id = match.group(1)
 
-    from youtube_transcript_api import YouTubeTranscriptApi
+
     try:
         transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ru', 'en'])
+
     except Exception as e:
         return {"summary": f"Ошибка при получении транскрипта: {str(e)}"}
 
     full_text = " ".join([item['text'] for item in transcript])
 
-    # Пример простого сокращения
-    words = full_text.split()
-    summary = " ".join(words[:100]) + "..." if len(words) > 100 else full_text
 
-    return {"summary": summary}
+    return {"summary": full_text}
 
 
 static_folder = os.path.join(os.path.dirname(__file__), "static")
