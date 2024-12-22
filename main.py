@@ -4,6 +4,8 @@ from typing import Optional
 from fastapi.staticfiles import StaticFiles
 import os
 
+from starlette.responses import PlainTextResponse, FileResponse
+
 app = FastAPI(
     title="YouTube Summary Plugin",
     description="...",
@@ -96,3 +98,28 @@ def get_summary(request: SummaryRequest):
     summary = " ".join(words[:100]) + "..." if len(words) > 100 else full_text
 
     return {"summary": summary}
+
+
+static_folder = os.path.join(os.path.dirname(__file__), "static")
+print(static_folder)
+os.makedirs(static_folder, exist_ok=True)
+app.mount(
+    "/static",
+    StaticFiles(directory=static_folder),
+    name="static"
+)
+@app.get("/logo.png")
+def get_logo():
+    file_path = os.path.join(static_folder, "logo.png")
+    print(f"[DEBUG] Проверяем наличие логотипа: {file_path}")
+    if os.path.exists(file_path):
+        print("[DEBUG] Файл найден, отдаем logo.png")
+        return FileResponse(file_path, media_type="image/png")
+    else:
+        print("[DEBUG] Файл logo.png не найден")
+        return PlainTextResponse("Logo not found", status_code=404)
+
+# 3. Создаем эндпоинт /terms
+@app.get("/terms", response_class=PlainTextResponse)
+def terms():
+    return "Условия использования: тут ваш текст."
