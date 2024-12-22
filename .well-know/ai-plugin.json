@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "YouTube Summary",
+  "name_for_model": "YouTubeSummary",
+  "description_for_human": "Получает краткую сводку из ролика YouTube",
+  "description_for_model": "Плагин получает URL на YouTube, извлекает транскрипт, возвращает короткую сводку.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "http://localhost:8000/openapi.json",
+    "is_user_authenticated": false
+  },
+  "logo_url": "",
+  "contact_email": "support@yoursite.com",
+  "legal_info_url": "https://ВАШ-ДОМЕН/terms"
+}
