@@ -5,9 +5,10 @@ from fastapi.staticfiles import StaticFiles
 import os
 from youtube_transcript_api import YouTubeTranscriptApi
 from starlette.responses import PlainTextResponse, FileResponse
-test_transcript = YouTubeTranscriptApi.get_transcript("7LdAabPIqNE", languages=['ru'])
-full_text = " ".join([item['text'] for item in test_transcript])
-print(full_text)
+from services.youtube_transcript_service import get_transcript
+
+
+
 app = FastAPI(
     title="YouTube Summary Plugin",
     description="...",
@@ -15,15 +16,10 @@ app = FastAPI(
     servers=[{"url": "https://gpttestplugin.onrender.com"}]  # <-- указываем реальный домен
 )
 
-# Отладка: посмотрим, какая у нас рабочая директория при запуске
-print("Текущая рабочая директория (os.getcwd()):", os.getcwd())
-print("Папка, где лежит этот скрипт (__file__):", __file__)
-print("os.path.dirname(__file__):", os.path.dirname(__file__))
 
 # Путь к папке .well-known
 directory_path = os.path.join(os.path.dirname(__file__), ".well-known")
 
-print("directory_path =", directory_path)
 
 # Создаём папку, если её нет
 if not os.path.exists(directory_path):
@@ -35,13 +31,10 @@ if not os.path.exists(directory_path):
 else:
     print(f"Папка '{directory_path}' уже существует.")
 
-# Проверяем права на чтение
-print("Папка доступна для чтения?", os.access(directory_path, os.R_OK))
+
 
 # Проверяем, что в папке действительно лежит ai-plugin.json
 file_path = os.path.join(directory_path, "ai-plugin.json")
-print("Путь к файлу ai-plugin.json:", file_path)
-print("Существует ли файл?", os.path.exists(file_path))
 
 if os.path.exists(file_path):
     try:
@@ -80,28 +73,15 @@ def get_summary(request: SummaryRequest):
     """
     youtube_url = request.youtube_url
 
-    import re
-    match = re.search(r"v=([^&]+)", youtube_url)
-    if not match:
-        return {"summary": "Не удалось найти ID видео в ссылке"}
-
-    video_id = match.group(1)
-
-
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ru', 'en'])
-
+        # Вызываем нашу функцию из youtube_transcript_service
+        full_text = get_transcript(youtube_url, languages=['ru', 'en'])
+        return {"summary": full_text}
     except Exception as e:
         return {"summary": f"Ошибка при получении транскрипта: {str(e)}"}
 
-    full_text = " ".join([item['text'] for item in transcript])
-
-
-    return {"summary": full_text}
-
 
 static_folder = os.path.join(os.path.dirname(__file__), "static")
-print(static_folder)
 os.makedirs(static_folder, exist_ok=True)
 app.mount(
     "/static",
@@ -111,12 +91,9 @@ app.mount(
 @app.get("/logo.png")
 def get_logo():
     file_path = os.path.join(static_folder, "logo.png")
-    print(f"[DEBUG] Проверяем наличие логотипа: {file_path}")
     if os.path.exists(file_path):
-        print("[DEBUG] Файл найден, отдаем logo.png")
         return FileResponse(file_path, media_type="image/png")
     else:
-        print("[DEBUG] Файл logo.png не найден")
         return PlainTextResponse("Logo not found", status_code=404)
 
 # 3. Создаем эндпоинт /terms
